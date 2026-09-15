@@ -1,6 +1,7 @@
 #!/bin/bash
 
 set -e
+
 clear
 
 echo "=============================================================="
@@ -24,10 +25,10 @@ if [ "$EUID" -ne 0 ]; then
 fi
 
 echo "[1/7] Updating Packages..."
-sudo apt-get update -y
+apt update -y
 
 echo "[2/7] Installing Required Packages..."
-sudo apt-get install -y curl wget apache2-utils
+apt install -y curl wget apache2-utils
 
 echo "[3/7] Downloading Squid Installer..."
 wget -q https://raw.githubusercontent.com/serverok/squid-proxy-installer/master/squid3-install.sh -O /tmp/squid3-install.sh
@@ -103,3 +104,5 @@ echo " Proxy    : $IP:3128:$USERNAME:$PASSWORD"
 echo ""
 echo " Thank you for choosing AK VPS!"
 echo "=============================================================="
+isme isko bhi add karke final code do :  sudo apt-get update
+sudo apt-get install squid -y
