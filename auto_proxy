@@ -1,6 +1,7 @@
 #!/bin/bash
 
 set -e
+
 clear
 
 echo "=============================================================="
@@ -24,18 +25,15 @@ if [ "$EUID" -ne 0 ]; then
 fi
 
 echo "[1/7] Updating Packages..."
-apt-get update -y
+apt update -y
 
 echo "[2/7] Installing Required Packages..."
-apt-get install -y curl wget apache2-utils
+apt install -y curl wget apache2-utils
 
-echo "[3/7] Installing Squid (direct from repo)..."
-apt-get install -y squid
-
-echo "[4/7] Downloading Squid Installer..."
+echo "[3/7] Downloading Squid Installer..."
 wget -q https://raw.githubusercontent.com/serverok/squid-proxy-installer/master/squid3-install.sh -O /tmp/squid3-install.sh
 
-echo "[5/7] Installing Squid..."
+echo "[4/7] Installing Squid..."
 bash /tmp/squid3-install.sh
 
 # Detect Config
@@ -48,12 +46,13 @@ else
     exit 1
 fi
 
-echo "[6/7] Configuring Squid..."
+echo "[5/7] Configuring Squid..."
 
 # Change Proxy Port to 3128
 sed -i 's/^http_port .*/http_port 3128/' "$CONF"
 
 PASSFILE="/etc/squid/passwd"
+
 mkdir -p /etc/squid
 
 USERNAME="user$(tr -dc 'a-z0-9' </dev/urandom | head -c6)"
@@ -72,8 +71,10 @@ EOF
 chown proxy:proxy "$PASSFILE" 2>/dev/null || true
 chmod 640 "$PASSFILE"
 
-echo "[7/7] Restarting Squid..."
+echo "[6/7] Restarting Squid..."
 systemctl restart squid
+
+echo "[7/7] Fetching Server Information..."
 
 IP=$(curl -4 -s https://api.ipify.org)
 
