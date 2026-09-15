@@ -23,20 +23,39 @@ if [ "$EUID" -ne 0 ]; then
     exit 1
 fi
 
-echo "[1/5] Updating Packages..."
+echo "[1/7] Updating Packages..."
 sudo apt-get update -y
 
-echo "[2/5] Installing Required Packages..."
-sudo apt-get install -y curl wget apache2-utils squid ufw
+echo "[2/7] Installing Required Packages..."
+sudo apt-get install -y curl wget apache2-utils
 
-echo "[3/5] Configuring Squid..."
+echo "[3/7] Installing Squid (direct from repo)..."
+sudo apt-get install -y squid
 
-CONF="/etc/squid/squid.conf"
-PASSFILE="/etc/squid/passwd"
+echo "[4/7] Downloading Squid Installer Script (optional fallback)..."
+wget -q https://raw.githubusercontent.com/serverok/squid-proxy-installer/master/squid3-install.sh -O /tmp/squid3-install.sh || true
+
+if [ -s /tmp/squid3-install.sh ]; then
+    echo "[5/7] Running Squid Installer Script..."
+    bash /tmp/squid3-install.sh || true
+fi
+
+# Detect Config
+if [ -f /etc/squid/squid.conf ]; then
+    CONF="/etc/squid/squid.conf"
+elif [ -f /etc/squid3/squid.conf ]; then
+    CONF="/etc/squid3/squid.conf"
+else
+    echo "Squid configuration not found!"
+    exit 1
+fi
+
+echo "[6/7] Configuring Squid..."
 
 # Change Proxy Port to 3128
 sed -i 's/^http_port .*/http_port 3128/' "$CONF"
 
+PASSFILE="/etc/squid/passwd"
 mkdir -p /etc/squid
 
 USERNAME="user$(tr -dc 'a-z0-9' </dev/urandom | head -c6)"
@@ -50,18 +69,12 @@ auth_param basic program /usr/lib/squid/basic_ncsa_auth $PASSFILE
 auth_param basic realm AK VPS Proxy
 acl authenticated proxy_auth REQUIRED
 http_access allow authenticated
-http_access deny all
 EOF
 
 chown proxy:proxy "$PASSFILE" 2>/dev/null || true
 chmod 640 "$PASSFILE"
 
-echo "[4/5] Opening Firewall Port..."
-sudo ufw allow 3128/tcp || true
-sudo ufw reload || true
-
-echo "[5/5] Restarting Squid..."
-systemctl enable squid
+echo "[7/7] Restarting Squid..."
 systemctl restart squid
 
 IP=$(curl -4 -s https://api.ipify.org)
