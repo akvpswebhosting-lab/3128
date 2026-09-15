@@ -27,7 +27,7 @@ echo "[1/5] Updating Packages..."
 sudo apt-get update -y
 
 echo "[2/5] Installing Required Packages..."
-sudo apt-get install -y curl wget apache2-utils squid
+sudo apt-get install -y curl wget apache2-utils squid ufw
 
 echo "[3/5] Configuring Squid..."
 
@@ -50,12 +50,18 @@ auth_param basic program /usr/lib/squid/basic_ncsa_auth $PASSFILE
 auth_param basic realm AK VPS Proxy
 acl authenticated proxy_auth REQUIRED
 http_access allow authenticated
+http_access deny all
 EOF
 
 chown proxy:proxy "$PASSFILE" 2>/dev/null || true
 chmod 640 "$PASSFILE"
 
-echo "[4/5] Restarting Squid..."
+echo "[4/5] Opening Firewall Port..."
+sudo ufw allow 3128/tcp || true
+sudo ufw reload || true
+
+echo "[5/5] Restarting Squid..."
+systemctl enable squid
 systemctl restart squid
 
 IP=$(curl -4 -s https://api.ipify.org)
